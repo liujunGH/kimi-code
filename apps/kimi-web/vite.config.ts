@@ -168,6 +168,9 @@ export default defineConfig({
   build: {
     outDir: 'dist',
     emptyOutDir: true,
+    // kimi-ui fork: relative asset paths so the bundle works from any origin
+    // (tauri:// asset protocol in the desktop shell, or a static file server).
+    base: './',
     target: 'es2022',
   },
   // Workers that import modules with code-splitting (e.g. mermaid's dynamic

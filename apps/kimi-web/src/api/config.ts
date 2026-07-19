@@ -34,6 +34,18 @@ export function readKimiApiConfig(): KimiApiConfig {
 // Set VITE_KIMI_SERVER_HTTP_URL to connect directly to an absolute server
 // origin instead (that path does require the server to send CORS headers).
 function defaultServerOrigin(): string {
+  // kimi-ui fork: the desktop shell hands over the live daemon origin (from
+  // the server lock file) via a QUERY param — the auth gate scrubs the URL
+  // fragment after reading the token ("keep path + query"), so the query
+  // string is the channel that actually survives.
+  try {
+    const injected = new URLSearchParams(window.location.search).get('daemon_base');
+    if (injected && injected.trim()) return normalizeServerOrigin(injected);
+  } catch {
+    /* ignore */
+  }
+  const injectedGlobal = (globalThis as Record<string, unknown>).__KIMI_DAEMON_BASE__;
+  if (typeof injectedGlobal === 'string' && injectedGlobal.trim()) return injectedGlobal.trim();
   if (typeof window !== 'undefined' && window.location?.origin) {
     return window.location.origin;
   }
