@@ -481,8 +481,13 @@ const following = ref(true);
 const showPill = ref(false);
 
 /** Within this many pixels from the bottom counts as "at the bottom" —
-    scrolling DOWN into this zone re-enables the follow. */
-const BOTTOM_THRESHOLD = 80;
+    scrolling fully INTO it re-enables the follow.
+    kimi-ui: 80 → 8. The larger threshold re-engaged the follow while the
+    user was still reading the streaming tail: any small downward scroll
+    within 80px of the bottom yanked them back down ("看不到想看的内容").
+    Re-follow now requires deliberately reaching the bottom (or clicking
+    the new-message pill). */
+const BOTTOM_THRESHOLD = 8;
 const USER_ACTION_FOLLOW_LOCK_MS = 1000;
 
 function distanceFromBottom(): number {

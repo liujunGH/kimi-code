@@ -572,8 +572,13 @@ function copyDiff(code: string, idx: number) {
 /* Lists */
 .md :deep(ul),
 .md :deep(ol) {
+  /* kimi-ui: 1.4em clipped double-digit ordered-list numbers ("10." lost
+     its "1"). ul markers are narrow, ol needs the wider gutter. */
   padding-left: 1.4em;
   margin: 0.6em 0;
+}
+.md :deep(ol) {
+  padding-left: 2em;
 }
 .md :deep(li) {
   margin: 0.3em 0;
