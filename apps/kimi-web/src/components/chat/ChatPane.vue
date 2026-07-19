@@ -833,6 +833,15 @@ function isStreamingRenderBlock(turn: ChatTurn, block: { sourceIndex: number }):
 .chat > .a-msg {
   margin-top: 10px;
 }
+
+/* kimi-ui virtualization phase 1: off-screen turns skip layout and paint
+   while the browser keeps their remembered height (auto, 220px pre-render
+   estimate). See apps/kimi-web/docs/virtualization.md. */
+.chat > .a-msg,
+.chat > .u-turn {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 220px;
+}
 .chat > .u-turn:first-child,
 .chat > .a-msg:first-child,
 .chat > .compact-divider:first-child,
