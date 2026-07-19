@@ -810,7 +810,14 @@ const scrollKey = computed<ScrollKey>(() => {
   const thinkingLen = last?.thinking?.length ?? 0;
   const toolsLen =
     last?.tools?.reduce(
-      (n, tool) => n + tool.name.length + (tool.arg?.length ?? 0) + (tool.output?.join('').length ?? 0),
+      // kimi-ui: don't join every output just to measure change — line count
+      // plus the tail line's length tracks streaming growth just as well.
+      (n, tool) =>
+        n +
+        tool.name.length +
+        (tool.arg?.length ?? 0) +
+        (tool.output?.length ?? 0) +
+        (tool.output?.at(-1)?.length ?? 0),
       0,
     ) ?? 0;
   return {
@@ -1131,7 +1138,11 @@ function rebindScrollObservers(): void {
   updatePanesScrollbarWidth();
   if (contentObserver) {
     contentObserver.disconnect();
-    if (el) contentObserver.observe(el, { childList: true, subtree: true, characterData: true });
+    // kimi-ui: drop characterData — per-token text updates during streaming
+    // fired this observer at delta rate. Structural changes (childList) are
+    // enough, and the scroll follow is driven by the reactive scrollKey
+    // watcher anyway.
+    if (el) contentObserver.observe(el, { childList: true, subtree: true });
   }
   if (resizeObserver) {
     resizeObserver.disconnect();
