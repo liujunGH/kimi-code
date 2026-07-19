@@ -53,7 +53,7 @@ const MESSAGES_PAGE_SIZE = 50;
 // kimi-ui: cap retained history — every prepended page otherwise stays in
 // memory (and in the DOM) forever. Past the cap we stop paging instead of
 // evicting, which keeps the live tail intact.
-const MAX_LOADED_MESSAGES = 600;
+const MAX_LOADED_MESSAGES = 2500;
 // Sessions fetched per workspace on first load — keeps the initial request
 // count at (number of workspaces) and each response small. Exported so the
 // sidebar can fall back to it when a workspace's first-page size is unknown.
