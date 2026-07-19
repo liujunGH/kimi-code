@@ -79,7 +79,7 @@ import type {
 import { createInitialState, reduceAppEvent, type CompactionStatus, type KimiClientState } from '../api/daemon/eventReducer';
 import { isPlaceholderSessionUsage, toAppEvent } from '../api/daemon/mappers';
 
-import { messagesToTurns } from './messagesToTurns';
+import { messagesToTurns, reconcileTurns } from './messagesToTurns';
 import { latestTodos } from './latestTodos';
 import { buildSwarmGroups, countSwarmMembers, swarmMembersByToolCall } from './swarmGroups';
 import type { SwarmGroup, SwarmMember } from './swarmGroups';
@@ -2015,19 +2015,28 @@ const activeAppTasks = computed<AppTask[]>(() => {
 
 const taskPoller = useTaskPoller(rawState, activeAppTasks);
 
+// kimi-ui: per-session previous-turns cache for reference reconciliation
+// (see reconcileTurns in messagesToTurns.ts).
+const prevTurnsBySession = new Map<string, ChatTurn[]>();
+
 const turns = computed<ChatTurn[]>(() => {
   const sid = rawState.activeSessionId;
   if (!sid) return [];
   const hiddenIds = new Set(rawState.sideChatUserMessageIdsBySession[sid] ?? []);
   const messages = (rawState.messagesBySession[sid] ?? []).filter((m) => !hiddenIds.has(m.id));
   const approvals = rawState.approvalsBySession[sid] ?? [];
-  return messagesToTurns(
+  const next = messagesToTurns(
     messages,
     approvals,
     (fileId) => getKimiWebApi().getFileUrl(fileId),
     turnActive.value,
     rawState.planReviewByToolCallId,
   );
+  // kimi-ui: keep object identity for unchanged turns across streaming
+  // batches, so only actually-changed turns re-render.
+  const reconciled = reconcileTurns(prevTurnsBySession.get(sid) ?? [], next);
+  prevTurnsBySession.set(sid, reconciled);
+  return reconciled;
 });
 
 /** The MAIN agent of the active session has a turn in flight — the working

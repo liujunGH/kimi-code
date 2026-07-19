@@ -942,3 +942,56 @@ export function messagesToTurns(
   flushGroup(true);
   return turns;
 }
+
+// ---------------------------------------------------------------------------
+// kimi-ui: turn-level reference reconciliation.
+//
+// messagesToTurns rebuilds every ChatTurn/ToolCall/block object on every
+// call (i.e. every streaming batch), which gives every downstream component
+// new props and re-renders the whole tree. Everything except the tail of the
+// transcript is almost always unchanged, so reconcile with the previous
+// result: reuse the previous turn object when its signature matches, keeping
+// component identity (and skipping re-render) for unchanged turns.
+// ---------------------------------------------------------------------------
+
+function toolSignature(t: ToolCall): string {
+  return [
+    t.id,
+    t.name,
+    t.status,
+    t.arg?.length ?? 0,
+    t.output?.length ?? -1,
+    t.planPath ?? '',
+    t.media ? 1 : 0,
+  ].join(':');
+}
+
+/** Signature of everything that affects a turn's rendering. */
+export function turnSignature(turn: ChatTurn): string {
+  return [
+    turn.role,
+    turn.text.length,
+    turn.thinking?.length ?? 0,
+    (turn.tools ?? []).map(toolSignature).join(','),
+    turn.blocks?.length ?? 0,
+    turn.approvalId ?? '',
+    turn.approval ? JSON.stringify(turn.approval) : '',
+    turn.durationMs ?? 0,
+  ].join('|');
+}
+
+/**
+ * Reuse previous turn objects when their signature matches, so unchanged
+ * turns keep object identity across streaming batches. Falls back to the
+ * freshly built object on any mismatch — behavior identical, references
+ * stable.
+ */
+export function reconcileTurns(prev: ChatTurn[], next: ChatTurn[]): ChatTurn[] {
+  if (prev.length === 0) return next;
+  const prevById = new Map(prev.map((t) => [t.id, t]));
+  return next.map((nt) => {
+    const pt = prevById.get(nt.id);
+    if (!pt) return nt;
+    return turnSignature(pt) === turnSignature(nt) ? pt : nt;
+  });
+}
