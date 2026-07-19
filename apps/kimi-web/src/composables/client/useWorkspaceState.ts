@@ -50,6 +50,10 @@ import type { UseSideChat } from './useSideChat';
 import type { UseTaskPoller } from './useTaskPoller';
 
 const MESSAGES_PAGE_SIZE = 50;
+// kimi-ui: cap retained history — every prepended page otherwise stays in
+// memory (and in the DOM) forever. Past the cap we stop paging instead of
+// evicting, which keeps the live tail intact.
+const MAX_LOADED_MESSAGES = 600;
 // Sessions fetched per workspace on first load — keeps the initial request
 // count at (number of workspaces) and each response small. Exported so the
 // sidebar can fall back to it when a workspace's first-page size is unknown.
@@ -319,6 +323,14 @@ export function useWorkspaceState(rawState: ExtendedState, deps: UseWorkspaceSta
     if (rawState.messagesLoadingMoreBySession[sessionId]) return;
     const current = rawState.messagesBySession[sessionId];
     if (!current || current.length === 0) return;
+    // kimi-ui: stop paging once the retention cap is reached.
+    if (current.length >= MAX_LOADED_MESSAGES) {
+      rawState.messagesHasMoreBySession = {
+        ...rawState.messagesHasMoreBySession,
+        [sessionId]: false,
+      };
+      return;
+    }
 
     const beforeId = current[0]!.id;
     rawState.messagesLoadingMoreBySession = {
